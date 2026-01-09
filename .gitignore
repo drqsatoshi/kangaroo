@@ -12,3 +12,4 @@ CMakeLists.txt
 kangaroo
 cmake-build-debug/
 *.prf
+_codeql_detected_source_root
