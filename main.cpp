@@ -23,6 +23,7 @@
 #include <string>
 #include <string.h>
 #include <stdexcept>
+#include <cctype>
 
 using namespace std;
 
@@ -61,8 +62,98 @@ void printUsage() {
   printf(" -o fileName: output result to fileName\n");
   printf(" -l: List cuda enabled devices\n");
   printf(" -check: Check GPU kernel vs CPU\n");
+  printf(" -puzzle n puzzleFile: Extract puzzle #n block from puzzleFile and run it\n");
   printf(" inFile: intput configuration file\n");
   exit(0);
+
+}
+
+// ------------------------------------------------------------------------------------------
+
+static bool ExtractPuzzleConfig(int puzzleNumber,const string &puzzleFile,string &outConfigFile) {
+
+  if(puzzleNumber <= 0) {
+    printf("Invalid puzzle number: %d\n",puzzleNumber);
+    return false;
+  }
+
+  ifstream in(puzzleFile);
+  if(!in) {
+    printf("Error: Cannot open %s\n",puzzleFile.c_str());
+    return false;
+  }
+
+  string line;
+  bool found = false;
+  string startRange, endRange, pubKey;
+
+  auto trim = [](string &s) {
+    size_t b = 0;
+    while(b < s.size() && isspace((unsigned char)s[b])) b++;
+    size_t e = s.size();
+    while(e > b && isspace((unsigned char)s[e - 1])) e--;
+    s = s.substr(b, e - b);
+  };
+
+  auto readNextValueLine = [&](string &dst) -> bool {
+    while(std::getline(in,line)) {
+      trim(line);
+      if(line.empty()) continue;
+      if(line[0] == '#') continue;
+      dst = line;
+      return true;
+    }
+    return false;
+  };
+
+  while(std::getline(in,line)) {
+    trim(line);
+    if(line.size() < 2) continue;
+    if(line[0] != '#') continue;
+
+    // Match lines like: "#120 ( ... )"
+    size_t pos = 1;
+    while(pos < line.size() && isspace((unsigned char)line[pos])) pos++;
+    size_t startDigits = pos;
+    while(pos < line.size() && isdigit((unsigned char)line[pos])) pos++;
+    if(pos == startDigits) continue;
+
+    int n = 0;
+    try {
+      n = std::stoi(line.substr(startDigits, pos - startDigits));
+    } catch(...) {
+      continue;
+    }
+
+    if(n == puzzleNumber) {
+      found = true;
+      if(!readNextValueLine(startRange) || !readNextValueLine(endRange) || !readNextValueLine(pubKey)) {
+        printf("Error: puzzle #%d found but block is incomplete\n",puzzleNumber);
+        return false;
+      }
+      break;
+    }
+  }
+
+  if(!found) {
+    printf("Error: puzzle #%d not found in %s\n",puzzleNumber,puzzleFile.c_str());
+    return false;
+  }
+
+  outConfigFile = "puzzle" + std::to_string(puzzleNumber) + ".txt";
+  ofstream out(outConfigFile, ios::out | ios::trunc);
+  if(!out) {
+    printf("Error: Cannot write %s\n",outConfigFile.c_str());
+    return false;
+  }
+
+  out << startRange << "\n";
+  out << endRange << "\n";
+  out << pubKey << "\n";
+  out.close();
+
+  printf("Extracted puzzle #%d to %s\n",puzzleNumber,outConfigFile.c_str());
+  return true;
 
 }
 
@@ -163,6 +254,8 @@ static bool serverMode = false;
 static string serverIP = "";
 static string outputFile = "";
 static bool splitWorkFile = false;
+static int puzzleNumber = -1;
+static string puzzleFile = "";
 
 int main(int argc, char* argv[]) {
 
@@ -298,6 +391,12 @@ int main(int argc, char* argv[]) {
     } else if(strcmp(argv[a],"-check") == 0) {
       checkFlag = true;
       a++;
+    } else if(strcmp(argv[a],"-puzzle") == 0) {
+      CHECKARG("-puzzle",1);
+      puzzleNumber = getInt("puzzleNumber",argv[a]);
+      CHECKARG("-puzzle",2);
+      puzzleFile = string(argv[a]);
+      a++;
     } else if(a == argc - 1) {
       configFile = string(argv[a]);
       a++;
@@ -306,6 +405,22 @@ int main(int argc, char* argv[]) {
       exit(-1);
     }
 
+  }
+
+  if(puzzleNumber > 0) {
+    if(configFile.length() > 0) {
+      printf("Error: cannot use -puzzle together with inFile argument\n");
+      exit(-1);
+    }
+    if(puzzleFile.length() == 0) {
+      printf("Error: -puzzle requires a puzzle file\n");
+      exit(-1);
+    }
+    string extractedConfig;
+    if(!ExtractPuzzleConfig(puzzleNumber,puzzleFile,extractedConfig)) {
+      exit(-1);
+    }
+    configFile = extractedConfig;
   }
 
   if(gridSize.size() == 0) {
