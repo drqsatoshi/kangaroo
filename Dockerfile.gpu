@@ -1,0 +1,25 @@
+# GPU-capable build/run container for Kangaroo
+#
+# Requires an NVIDIA GPU host with:
+# - NVIDIA driver installed on the host
+# - Docker installed on the host
+# - NVIDIA Container Toolkit installed/configured on the host
+#
+# Then run containers with: docker run --gpus all ...
+
+FROM nvidia/cuda:12.0.1-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    git \
+    make \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
+
+# Default to an interactive shell.
+CMD ["bash"]

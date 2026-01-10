@@ -141,6 +141,22 @@ void GPUEngine::SetWildOffset(Int* offset) {
   wildOffset.Set(offset);
 }
 
+static void PrintCudaDeviceDetectionHint(cudaError_t error_id) {
+
+  // Common cases when running in containers/VMs without GPU passthrough.
+  if(error_id == cudaErrorNoDevice) {
+    printf("GPUEngine: Hint: no CUDA devices are visible to this process.\n");
+    printf("GPUEngine: Hint: if running in a container, you must run it with GPU passthrough (e.g. Docker: --gpus all)\n");
+    printf("GPUEngine: Hint: and the NVIDIA driver must be installed on the host (nvidia-smi should work on the host).\n");
+  } else if(error_id == cudaErrorInsufficientDriver) {
+    printf("GPUEngine: Hint: NVIDIA driver is missing or too old for this CUDA runtime.\n");
+    printf("GPUEngine: Hint: install/upgrade the NVIDIA driver on the host (containers cannot load kernel modules).\n");
+  } else if(error_id == cudaErrorInitializationError) {
+    printf("GPUEngine: Hint: CUDA initialization failed; check driver installation and device access (/dev/nvidia*).\n");
+  }
+
+}
+
 GPUEngine::GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t maxFound) {
 
   // Initialise CUDA
@@ -153,12 +169,14 @@ GPUEngine::GPUEngine(int nbThreadGroup,int nbThreadPerGroup,int gpuId,uint32_t m
 
   if(error_id != cudaSuccess) {
     printf("GPUEngine: CudaGetDeviceCount %s\n",cudaGetErrorString(error_id));
+    PrintCudaDeviceDetectionHint(error_id);
     return;
   }
 
   // This function call returns 0 if there are no CUDA capable devices.
   if(deviceCount == 0) {
     printf("GPUEngine: There are no available device(s) that support CUDA\n");
+    PrintCudaDeviceDetectionHint(cudaErrorNoDevice);
     return;
   }
 
@@ -281,12 +299,14 @@ bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
 
     if(error_id != cudaSuccess) {
       printf("GPUEngine: CudaGetDeviceCount %s\n",cudaGetErrorString(error_id));
+      PrintCudaDeviceDetectionHint(error_id);
       return false;
     }
 
     // This function call returns 0 if there are no CUDA capable devices.
     if(deviceCount == 0) {
       printf("GPUEngine: There are no available device(s) that support CUDA\n");
+      PrintCudaDeviceDetectionHint(cudaErrorNoDevice);
       return false;
     }
 
@@ -345,14 +365,18 @@ void GPUEngine::PrintCudaInfo() {
 
   if(error_id != cudaSuccess) {
     printf("GPUEngine: CudaGetDeviceCount %s\n",cudaGetErrorString(error_id));
+    PrintCudaDeviceDetectionHint(error_id);
     return;
   }
 
   // This function call returns 0 if there are no CUDA capable devices.
   if(deviceCount == 0) {
     printf("GPUEngine: There are no available device(s) that support CUDA\n");
+    PrintCudaDeviceDetectionHint(cudaErrorNoDevice);
     return;
   }
+
+  printf("GPUEngine: Detected %d CUDA device(s)\n", deviceCount);
 
   for(int i = 0; i<deviceCount; i++) {
 

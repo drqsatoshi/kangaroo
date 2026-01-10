@@ -1,0 +1,10 @@
+obj/
+*.o
+kangaroo
+.git/
+.gitignore
+.vscode/
+*.suo
+*.user
+*.vcxproj*
+VC_CUDA*/

@@ -3,6 +3,8 @@
 #
 # Author : Jean-Luc PONS
 
+.DEFAULT_GOAL := all
+
 ifdef gpu
 
 SRC = SECPK1/IntGroup.cpp main.cpp SECPK1/Random.cpp \
@@ -39,26 +41,46 @@ OBJET = $(addprefix $(OBJDIR)/, \
 
 endif
 
-CXX        = g++
-CUDA       = /usr/local/cuda-8.0
-CXXCUDA    = /usr/bin/g++-4.8
-NVCC       = $(CUDA)/bin/nvcc
+CXX        ?= g++
+
+# CUDA configuration
+#
+# - On Ubuntu (e.g. via `apt install nvidia-cuda-toolkit`), `nvcc` is typically
+#   installed in /usr/bin and headers in /usr/lib/cuda/include.
+# - On NVIDIA's installer/toolkit, CUDA is often under /usr/local/cuda.
+#
+# Override as needed:
+#   make gpu=1 CUDA=/usr/local/cuda NVCC=/usr/local/cuda/bin/nvcc CXXCUDA=/usr/bin/g++ ccap=80
+CUDA       ?= /usr/lib/cuda
+
+# Auto-fallback for environments where CUDA is under /usr/local/cuda (common in
+# NVIDIA CUDA Docker images and NVIDIA's installer).
+ifeq ($(wildcard $(CUDA)/include/cuda.h),)
+      CUDA := /usr/local/cuda
+endif
+
+CUDA_INC   ?= $(CUDA)/include
+CXXCUDA    ?= $(CXX)
+NVCC       ?= nvcc
 
 ifdef gpu
 
 ifdef debug
-CXXFLAGS   = -DWITHGPU -m64  -mssse3 -Wno-unused-result -Wno-write-strings -g -I. -I$(CUDA)/include
+CXXFLAGS   = -DWITHGPU -m64  -mssse3 -Wno-unused-result -Wno-write-strings -g -I. -I$(CUDA_INC)
 else
-CXXFLAGS   = -DWITHGPU -m64 -mssse3 -Wno-unused-result -Wno-write-strings -O2 -I. -I$(CUDA)/include
+CXXFLAGS   = -DWITHGPU -m64 -mssse3 -Wno-unused-result -Wno-write-strings -O2 -I. -I$(CUDA_INC)
 endif
-LFLAGS     = -lpthread -L$(CUDA)/lib64 -lcudart
+# libcudart is in standard lib paths on Ubuntu when installed via apt, but in
+# NVIDIA CUDA Docker images it's typically under /usr/local/cuda/... which is
+# not a default link search path.
+LFLAGS     = -lpthread -L$(CUDA)/lib64 -L$(CUDA)/targets/x86_64-linux/lib -lcudart
 
 else
 
 ifdef debug
-CXXFLAGS   = -m64 -mssse3 -Wno-unused-result -Wno-write-strings -g -I. -I$(CUDA)/include
+CXXFLAGS   = -m64 -mssse3 -Wno-unused-result -Wno-write-strings -g -I.
 else
-CXXFLAGS   =  -m64 -mssse3 -Wno-unused-result -Wno-write-strings -O2 -I. -I$(CUDA)/include
+CXXFLAGS   =  -m64 -mssse3 -Wno-unused-result -Wno-write-strings -O2 -I.
 endif
 LFLAGS     = -lpthread
 
@@ -66,13 +88,15 @@ endif
 
 #--------------------------------------------------------------------
 
+NVCC_COMMON = -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(CXXCUDA) -m64 -I$(CUDA_INC) -gencode=arch=compute_$(ccap),code=sm_$(ccap)
+
 ifdef gpu
 ifdef debug
 $(OBJDIR)/GPU/GPUEngine.o: GPU/GPUEngine.cu
-	$(NVCC) -G -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(CXXCUDA) -m64 -g -I$(CUDA)/include -gencode=arch=compute_$(ccap),code=sm_$(ccap) -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
+	$(NVCC) -G -g $(NVCC_COMMON) -o $@ -c $<
 else
 $(OBJDIR)/GPU/GPUEngine.o: GPU/GPUEngine.cu
-	$(NVCC) -maxrregcount=0 --ptxas-options=-v --compile --compiler-options -fPIC -ccbin $(CXXCUDA) -m64 -O2 -I$(CUDA)/include -gencode=arch=compute_$(ccap),code=sm_$(ccap) -o $(OBJDIR)/GPU/GPUEngine.o -c GPU/GPUEngine.cu
+	$(NVCC) -O2 $(NVCC_COMMON) -o $@ -c $<
 endif
 endif
 
