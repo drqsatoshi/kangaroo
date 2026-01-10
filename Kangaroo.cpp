@@ -102,11 +102,25 @@ bool Kangaroo::ParseConfigFile(std::string &fileName) {
   ifstream inFile(fileName);
   while(getline(inFile,line)) {
 
+    // Trim leading spaces
+    size_t firstNonSpace = 0;
+    while(firstNonSpace < line.size() && isspace((unsigned char)line[firstNonSpace])) {
+      firstNonSpace++;
+    }
+    if(firstNonSpace > 0) {
+      line.erase(0, firstNonSpace);
+    }
+
     // Remove ending \r\n
     int l = (int)line.length() - 1;
     while(l >= 0 && isspace(line.at(l))) {
       line.pop_back();
       l--;
+    }
+
+    // Skip comments
+    if(line.length() > 0 && line[0] == '#') {
+      continue;
     }
 
     if(line.length() > 0) {
@@ -128,7 +142,16 @@ bool Kangaroo::ParseConfigFile(std::string &fileName) {
     Point p;
     bool isCompressed;
     if( !secp->ParsePublicKeyHex(lines[i],p,isCompressed) ) {
+      bool looksLikePubKey = false;
+      if(lines[i].size() >= 2 && lines[i][0] == '0') {
+        char prefix = lines[i][1];
+        looksLikePubKey = (prefix == '2' || prefix == '3' || prefix == '4');
+      }
       ::printf("%s, error line %d: %s\n",fileName.c_str(),i,lines[i].c_str());
+      if(!looksLikePubKey) {
+        ::printf("Hint: input file format is: StartRange, EndRange, then one or more public keys.\n");
+        ::printf("      If your file contains multiple (start,end,key) blocks (like a puzzle list), split it into one range per file.\n");
+      }
       return false;
     }
     keysToSearch.push_back(p);
