@@ -3,6 +3,22 @@
 A Pollard's kangaroo interval ECDLP solver for SECP256K1 (based on VanitySearch engine).\
 **This program is limited to a 125bit interval search.**
 
+# 📓 Jupyter Notebook for Kaggle
+
+**NEW**: A comprehensive Jupyter notebook is now available! Perfect for learning and experimentation on Kaggle or local Jupyter environments.
+
+👉 **[kangaroo_ecdlp_solver.ipynb](kangaroo_ecdlp_solver.ipynb)** - Interactive tutorial and complete guide
+
+### What's in the Notebook?
+
+- 📚 **Educational content**: ECDLP problem explanation, algorithm overview, SECP256K1 curve
+- 🛠️ **Practical guides**: Installation, compilation, usage examples
+- 📊 **Analysis tools**: Performance calculators, visualizations, benchmarks
+- 🔧 **Reference material**: Command options, troubleshooting, GPU compatibility
+- 🎯 **Kaggle-ready**: Works on Kaggle's free tier (CPU builds)
+
+See [NOTEBOOK_README.md](NOTEBOOK_README.md) for detailed notebook documentation.
+
 # Feature
 
 <ul>
