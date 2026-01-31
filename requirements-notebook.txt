@@ -1,0 +1,15 @@
+# Python Requirements for Jupyter Notebook
+
+# Core dependencies for the Jupyter notebook
+jupyter>=1.0.0
+notebook>=6.0.0
+
+# Data manipulation and numerical computing
+numpy>=1.19.0
+
+# Visualization
+matplotlib>=3.3.0
+
+# Note: These packages are pre-installed in Kaggle environments
+# For local Jupyter setups, install with:
+#   pip install -r requirements-notebook.txt
