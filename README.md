@@ -3,19 +3,26 @@
 A Pollard's kangaroo interval ECDLP solver for SECP256K1 (based on VanitySearch engine).\
 **This program is limited to a 125bit interval search.**
 
-# 📓 Jupyter Notebook for Kaggle
+# 📓 Jupyter Notebooks
 
-**NEW**: A comprehensive Jupyter notebook is now available! Perfect for learning and experimentation on Kaggle or local Jupyter environments.
+**NEW**: Interactive Jupyter notebooks are now available! Perfect for learning and experimentation on Kaggle, Google Colab, or local Jupyter environments.
+
+### Available Notebooks
 
 👉 **[kangaroo_ecdlp_solver.ipynb](kangaroo_ecdlp_solver.ipynb)** - Interactive tutorial and complete guide
-
-### What's in the Notebook?
-
 - 📚 **Educational content**: ECDLP problem explanation, algorithm overview, SECP256K1 curve
 - 🛠️ **Practical guides**: Installation, compilation, usage examples
 - 📊 **Analysis tools**: Performance calculators, visualizations, benchmarks
 - 🔧 **Reference material**: Command options, troubleshooting, GPU compatibility
 - 🎯 **Kaggle-ready**: Works on Kaggle's free tier (CPU builds)
+
+👉 **[puzzle120_gpu_1hour.ipynb](puzzle120_gpu_1hour.ipynb)** - Puzzle #120 GPU solver (1-hour run)
+- 🎯 **Focused on Puzzle #120**: Pre-configured for address 17s2b9ksz5y7abUm92cHwG8jEPCzK3dLnT
+- 🚀 **GPU-optimized**: Automatic GPU detection and compilation
+- ⏱️ **Timed execution**: Runs for exactly 1 hour with automatic termination
+- 💾 **Work file management**: Saves progress every 5 minutes for resumption
+- 📊 **Progress tracking**: Real-time statistics and performance analysis
+- 🔄 **Resumable**: Can continue from saved work files
 
 See [NOTEBOOK_README.md](NOTEBOOK_README.md) for detailed notebook documentation.
 
